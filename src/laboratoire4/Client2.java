@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Hashtable;
 
 public class Client2 {
@@ -19,7 +20,9 @@ public class Client2 {
         Pion_rouge,
     }
     */
-
+    //Color red = 0; black = 1;
+    private int color = 0;
+    private int[] pieceCode = {1,2};
     private Hashtable<Character,Integer> columnTableAssociation = new Hashtable<Character,Integer>();
     private int[][] board = new int[8][8];
 
@@ -52,6 +55,9 @@ public class Client2 {
             // System.out.println(cmd);
             switch (cmd) {
                 case '1': // You have the first move
+                    this.color = 0;
+                    this.pieceCode[0] = 3;
+                    this.pieceCode[1] = 4;
                     aBuffer = new byte[1024];
                     size = input.available();
                     // System.out.println("size " + size);
@@ -59,14 +65,16 @@ public class Client2 {
                     s = new String(aBuffer).trim();
                     System.out.println(s);
                     buildTable(s);
-                    viewTable();
-                    System.out.println("Nouvelle partie! Vous jouer blanc, entrez votre premier coup : ");
+                    viewTable(this.board);
+                    System.out.println("Nouvelle partie! Vous jouer blanc, entrez votre premier coup : ");                    
                     String move = null;
                     move = console.readLine();
+                    updateTable(move);
                     output.write(move.getBytes(), 0, move.length());
                     output.flush();
                     break;
                 case '2': // You have the second move
+                    this.color = 1;
                     aBuffer = new byte[1024];
                     size = input.available();
                     // System.out.println("size " + size);
@@ -74,7 +82,7 @@ public class Client2 {
                     s = new String(aBuffer).trim();
                     System.out.println(s);
                     buildTable(s);
-                    viewTable();
+                    viewTable(this.board);
                     break;
                 case '3': // New move
                     aBuffer = new byte[16];
@@ -84,10 +92,13 @@ public class Client2 {
                     s = new String(aBuffer);
                     System.out.println("Dernier coup :" + s);
                     updateTable(s);
+                    Node node = buildTree();
                     System.out.println("Entrez votre coup : ");
+                    //Implementation of our giveNextMove function
                     move = null;
                     move = console.readLine();
                     updateTable(move);
+                    node = buildTree();
                     output.write(move.getBytes(), 0, move.length());
                     output.flush();
                 System.out.println("end of cmd3");
@@ -129,7 +140,7 @@ public class Client2 {
         this.columnTableAssociation.put('H',8);
     }
 
-    public void viewTable() {
+    public void viewTable(int[][] board) {
         for(int i=0;i<board.length;i++){
             for(int j=0;j<board[0].length;j++){
                 System.out.print(board[j][i]);
@@ -160,6 +171,73 @@ public class Client2 {
             this.board[this.columnTableAssociation.get(currentMove[0])-1][this.board[0].length-Character.getNumericValue(currentMove[1])];
         //Delete the old token
         this.board[this.columnTableAssociation.get(currentMove[0])-1][this.board[0].length-Character.getNumericValue(currentMove[1])] = 0;
-        viewTable();
+        viewTable(this.board);
     }
+
+    public Node buildTree() {
+        /*
+        TODO edit method to account for black pieces movement by either 
+        flipping the board or using variables to add or remove from j and i positions instead of constants
+        */
+        Node node = new Node();
+        node.setBoard(this.board);
+        // for every space there is on the board
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[0].length; j++) {
+                // is a small piece
+                if (board[j][i] == pieceCode[0]) {
+                    // Middle move
+                    //checks if space in front isn't occupied
+                    if (board[j][i - 1] == 0 && board[j][i + 1] == pieceCode[1]) {
+                        addMove(node, i, j, i - 1, j);
+                    }
+                    //Left and right moves
+                    //same here for sides
+                    if (j != 0 && j != 7) {                        
+                        if (board[j + 1][i + 1] == pieceCode[1]
+                                && (board[j - 1][i - 1] != pieceCode[0] && board[j - 1][i - 1] != pieceCode[1])) {
+                            addMove(node, i, j, i - 1, j - 1);
+                        }
+                        if (board[j - 1][i + 1] == pieceCode[1]
+                                && (board[j + 1][i - 1] != pieceCode[0] && board[j + 1][i - 1] != pieceCode[1])) {
+                            addMove(node, i, j, i - 1, j + 1);
+                        }
+                    }
+                    // is a big piece
+                } else if (board[j][i] == pieceCode[1]) {
+                    //checks if space in front isn't occupied
+                    if (board[j][i - 1] != pieceCode[0] && board[j][i - 1] != pieceCode[1]) {
+                        if (board[j][i - 1] == 0) {
+                            addMove(node, i, j, i - 1, j);
+                        }
+                        //similar to previous
+                        if(j!=0 && (board[j - 1][i - 1] != pieceCode[0] && board[j - 1][i - 1] != pieceCode[1])){
+                            addMove(node, i, j, i - 1, j-1);
+                        }
+                        if(j!=7 && (board[j + 1][i - 1] != pieceCode[0] && board[j + 1][i - 1] != pieceCode[1])){
+                            addMove(node, i, j, i - 1, j+1);
+                        }                        
+                    }
+                }
+                // Color black or empty space
+            }
+        }
+        //TODO remove in production
+        int i = 1;
+        for (Node child : node.getChildren()) {
+            System.out.println("Board " + i);
+            viewTable(child.getBoard());
+            i++;
+        }
+        return node;
+    }
+
+    public void addMove(Node node, int i, int j,int tempi,int tempj){
+        int[][] tempBoard = Arrays.stream(this.board).map(int[]::clone).toArray(int[][]::new);//Reference: https://stackoverflow.com/questions/5617016/how-do-i-copy-a-2-dimensional-array-in-java
+        tempBoard[tempj][tempi] = tempBoard[j][i];
+        tempBoard[j][i] = 0;
+        Node tempNode = new Node();
+        tempNode.setBoard(tempBoard);
+        node.addChildren(tempNode);
+    }    
 }
