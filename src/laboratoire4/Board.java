@@ -22,10 +22,10 @@ public class Board {
     }
 
     private final Case[][] board = new Case[8][8];
-    private final boolean isSecondPlayerTurn;
+    private final boolean isFirstPlayerTurn;
 
-    public Board(String init, boolean isSecondPlayerTurn) {
-        this.isSecondPlayerTurn = isSecondPlayerTurn;
+    public Board(String init, boolean isFirstPlayerTurn) {
+        this.isFirstPlayerTurn = isFirstPlayerTurn;
         String[] s = init.split(" ");
         if (s.length != 64) {
             // ???
@@ -37,7 +37,7 @@ public class Board {
 
     // KEEP PRIVATE - use Board.getNextMove(Move) instead
     private Board(Board parent, Move move) {
-        this.isSecondPlayerTurn = !parent.isSecondPlayerTurn;
+        this.isFirstPlayerTurn = !parent.isFirstPlayerTurn;
         for (int x = 0; x < 8; x++) {
             for (int y = 0; y < 8; y++) {
                 if (x == move.colA && y == move.rowA) {
@@ -77,8 +77,44 @@ public class Board {
     private double cachedHeuristic;
     public double getHeuristic() {
         if (!hasCachedHeuristic) {
-            // TODO: Evaluate the heuristic
+            // TODO: Improve heuristic (currently, the heuristic os the row of
+            // the furthest pawn. For example, if all of your pawns are on rows
+            // 1, 2, 3, and one of them is on row 5, the heuristic is 5.)
             cachedHeuristic = 0.0;
+
+            for (int y = 0; y < 8; y++) {
+                for (int x = 0; x < 8; x++) {
+                    switch (board[y][x].value()) {
+                        case 1:
+                        case 2:
+                            if (!isFirstPlayerTurn) {
+                                double h = ((double) y + 1) / 8.0;
+                                if (cachedHeuristic < h) {
+                                    cachedHeuristic = h;
+                                }
+                                // Skip over the innermost for-loop, since we know there's a pawn on this row already
+                                continue;
+                            }
+                            break;
+
+                        case 3:
+                        case 4:
+                            if (isFirstPlayerTurn) {
+                                double h = 1.0 - ((double) y) / 8.0;
+                                if (cachedHeuristic < h) {
+                                    cachedHeuristic = h;
+                                }
+                                // Skip over the innermost for-loop, since we know there's a pawn on this row already
+                                continue;
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+            }
+
             hasCachedHeuristic = true;
         }
 
@@ -94,6 +130,7 @@ public class Board {
             }
             s += "\n";
         }
+        s += "Heuristic for current player (" + (isFirstPlayerTurn ? 1 : 2) + "): " + getHeuristic();
         return s;
     }
 
@@ -110,19 +147,19 @@ public class Board {
         public Move(String cmd) {
             cmd = cmd.trim();
             this.colA = cmd.charAt(0) - 'A';
-            this.rowA = cmd.charAt(1) - '1';
+            this.rowA = 8 - (cmd.charAt(1) - '0');
             this.colB = cmd.charAt(5) - 'A';
-            this.rowB = cmd.charAt(6) - '1';
-        }
-
-        public static boolean isValid(String cmd) {
-            return cmd != null && cmd.matches("^[A-H][1-8] - [A-H][1-8]$");
+            this.rowB = 8 - (cmd.charAt(6) - '0');
         }
 
         @Override
         public String toString() {
-            return new String(new byte[] { (byte) ('A' + colA) }) + (rowA + 1) + " - "
-                 + new String(new byte[] { (byte) ('A' + colB) }) + (rowB + 1);
+            return new String(new byte[] { (byte) ('A' + colA) }) + (8 - rowA) + " - "
+                 + new String(new byte[] { (byte) ('A' + colB) }) + (8 - rowB);
+        }
+
+        public static boolean isValid(String cmd) {
+            return cmd != null && cmd.matches("^[A-H][1-8] - [A-H][1-8]$");
         }
     }
 }

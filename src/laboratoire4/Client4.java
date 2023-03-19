@@ -44,7 +44,7 @@ public class Client4 {
                     input.read(aBuffer, 0, size);
                     s = new String(aBuffer).trim();
 
-                    board = new Board(s, cmd == 1);
+                    board = new Board(s, cmd == '1');
 
                     System.out.println(board);
                     if (cmd == '1') {
@@ -55,6 +55,7 @@ public class Client4 {
 
                         lastBoard = board;
                         board = board.getNextMove(new Board.Move(move));
+                        System.out.println(board);
 
                         output.write(move.getBytes(), 0, move.length());
                         output.flush();
@@ -80,6 +81,7 @@ public class Client4 {
 
                     lastBoard = board;
                     board = board.getNextMove(new Board.Move(move));
+                    System.out.println(board);
 
                     output.write(move.getBytes(), 0, move.length());
                     output.flush();
@@ -89,12 +91,15 @@ public class Client4 {
                     System.out.println("Coup invalide, veuillez entrer votre coup :");
 
                     board = lastBoard;
+                    System.out.println(board);
+
                     do {
                         move = console.readLine();
                     } while (!Board.Move.isValid(move));
 
                     lastBoard = board;
                     board = board.getNextMove(new Board.Move(move));
+                    System.out.println(board);
 
                     output.write(move.getBytes(), 0, move.length());
                     output.flush();
@@ -107,6 +112,7 @@ public class Client4 {
                     s = new String(aBuffer);
 
                     System.out.println("Partie Terminé. Le dernier coup joué est: " + s);
+                    System.out.println(board);
                     lastBoard = null;
                     board = null;
                     break;
