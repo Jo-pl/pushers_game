@@ -27,9 +27,11 @@ public class Board {
     public Board(String init, boolean isFirstPlayerTurn) {
         this.isFirstPlayerTurn = isFirstPlayerTurn;
         String[] s = init.split(" ");
+
         if (s.length != 64) {
-            // ???
+            System.err.println("/!\\ ERR: Creating board with a non-8x8 data grid. This should never happen.");
         }
+
         for (int i = 0; i < s.length; i++) {
             board[i / 8][i % 8] = Case.values()[Integer.parseInt(s[i])];
         }
@@ -52,12 +54,59 @@ public class Board {
     }
 
     // Get all possible next moves
+    // The order is important! The most advantaging moves should be listed first
     private ArrayList<Move> cachedMoves;
     public ArrayList<Move> getMoves() {
         if (cachedMoves == null) {
             cachedMoves = new ArrayList<Move>();
 
-            // TODO: Make a list of possible moves
+            if (isFirstPlayerTurn) {
+                for (int y = 0; y < 8; y++) {
+                    for (int x = 0; x < 8; x++) {
+                        if (board[y][x] == Case.Rouge) {
+                            for (int dx = -1; dx <= 1; dx++) {
+                                // Un pion n'est jamais sur la première ligne, pas besoin de vérifier que y < 7
+                                if (x + dx > 0 && x + dx < 8 && x - dx > 0 && x - dx < 8 && y > 0) {
+                                    if (board[y + 1][x + dx] == Case.RougePusher && (board[y - 1][x - dx] == Case.Vide || (dx != 0 && (board[y - 1][x - dx] == Case.Noir || board[y - 1][x - dx] == Case.NoirPusher)))) {
+                                        cachedMoves.add(new Move(x, y, x - dx, y - 1));
+                                    }
+                                }
+                            }
+                        } else if (board[y][x] == Case.RougePusher) {
+                            for (int dx = -1; dx <= 1; dx++) {
+                                if (x - dx > 0 && x - dx < 8 && y > 0) {
+                                    if (board[y - 1][x - dx] == Case.Vide || (dx != 0 && (board[y - 1][x - dx] == Case.Noir || board[y - 1][x - dx] == Case.NoirPusher))) {
+                                        cachedMoves.add(new Move(x, y, x - dx, y - 1));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (int y = 7; y >= 0; y--) {
+                    for (int x = 0; x < 8; x++) {
+                        if (board[y][x] == Case.Noir) {
+                            for (int dx = -1; dx <= 1; dx++) {
+                                // Un pion n'est jamais sur la première ligne, pas besoin de vérifier que y > 0
+                                if (x + dx > 0 && x + dx < 8 && x - dx > 0 && x - dx < 8 && y < 7) {
+                                    if (board[y - 1][x + dx] == Case.NoirPusher && (board[y + 1][x - dx] == Case.Vide || (dx != 0 && (board[y + 1][x - dx] == Case.Rouge || board[y + 1][x - dx] == Case.RougePusher)))) {
+                                        cachedMoves.add(new Move(x, y, x - dx, y + 1));
+                                    }
+                                }
+                            }
+                        } else if (board[y][x] == Case.NoirPusher) {
+                            for (int dx = -1; dx <= 1; dx++) {
+                                if (x - dx > 0 && x - dx < 8 && y < 7) {
+                                    if (board[y + 1][x - dx] == Case.Vide || (dx != 0 && (board[y + 1][x - dx] == Case.Rouge || board[y + 1][x - dx] == Case.RougePusher))) {
+                                        cachedMoves.add(new Move(x, y, x - dx, y + 1));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         return cachedMoves;
@@ -80,45 +129,57 @@ public class Board {
             // TODO: Improve heuristic (currently, the heuristic os the row of
             // the furthest pawn. For example, if all of your pawns are on rows
             // 1, 2, 3, and one of them is on row 5, the heuristic is 5.)
-            cachedHeuristic = 0.0;
+            double hP1 = 0.0, hP2 = 0.0;
 
             for (int y = 0; y < 8; y++) {
                 for (int x = 0; x < 8; x++) {
                     switch (board[y][x].value()) {
-                        case 1:
-                        case 2:
-                            if (!isFirstPlayerTurn) {
-                                double h = ((double) y + 1) / 8.0;
-                                if (cachedHeuristic < h) {
-                                    cachedHeuristic = h;
-                                }
-                                // Skip over the innermost for-loop, since we know there's a pawn on this row already
-                                continue;
-                            }
-                            break;
-
                         case 3:
                         case 4:
-                            if (isFirstPlayerTurn) {
-                                double h = 1.0 - ((double) y) / 8.0;
-                                if (cachedHeuristic < h) {
-                                    cachedHeuristic = h;
-                                }
-                                // Skip over the innermost for-loop, since we know there's a pawn on this row already
-                                continue;
-                            }
+                            hP1 = 1.0 - ((double) y) / 8.0;
                             break;
 
                         default:
                             break;
                     }
+
+                    if (hP1 != 0)
+                        break;
                 }
+
+                if (hP1 != 0)
+                    break;
             }
 
+            for (int y = 7; y >= 0; y--) {
+                for (int x = 0; x < 8; x++) {
+                    switch (board[y][x].value()) {
+                        case 1:
+                        case 2:
+                            hP2 = ((double) y + 1) / 8.0;
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    if (hP2 != 0)
+                        break;
+                }
+
+                if (hP2 != 0)
+                    break;
+            }
+
+            cachedHeuristic = (hP1 == 1) ? 100 : (hP2 == 1) ? -100 : hP1 - hP2;
             hasCachedHeuristic = true;
         }
 
         return cachedHeuristic;
+    }
+
+    public boolean isFirstPlayer() {
+        return isFirstPlayerTurn;
     }
 
     @Override
@@ -130,7 +191,10 @@ public class Board {
             }
             s += "\n";
         }
-        s += "Heuristic for current player (" + (isFirstPlayerTurn ? 1 : 2) + "): " + getHeuristic();
+        s += "\nPossible moves:";
+        for (Move m : getMoves()) {
+            s += "\n\t" + m;
+        }
         return s;
     }
 
