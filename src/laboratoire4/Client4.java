@@ -83,7 +83,6 @@ public class Client4 {
                     lastBoard = board;
                     board = board.getNextMove(new Board.Move(move));
                     System.out.println(board);
-                    wait(1000);
 
                     output.write(move.getBytes(), 0, move.length());
                     output.flush();
@@ -119,9 +118,12 @@ public class Client4 {
                     board = null;
                     break;
 
-                default:
+                case ' ':
                     // The input cmd also print spaces
                     break;
+
+                default:
+                    System.exit(0);
             }
         }
     }
@@ -134,7 +136,6 @@ public class Client4 {
         for (Move m : board.getMoves()) {
             Board b = board.getNextMove(m);
 
-            // double h = MiniMax(b, fp, 4);
             double h = MiniMaxAlphaBeta(b, fp, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 4);
 
             if (h > max) {
@@ -147,34 +148,11 @@ public class Client4 {
         }
 
         System.out.println("Best move: " + maxMoves.get(0) + " : " + max);
-        return maxMoves.get(0 /*(int) (Math.random() * maxMoves.size())*/).toString();
+        return maxMoves.get((int) (Math.random() * maxMoves.size())).toString();
     }
 
-    public double MiniMax(Board board, boolean isFirstPlayer, int iterRemain) {
-        double h = board.getHeuristic();
-        if (h == 100 || h == -100 || iterRemain == 0) {
-            return h;
-        }
-
-        if (board.isFirstPlayer() == isFirstPlayer) {
-            // Max
-            double maxScore = Double.NEGATIVE_INFINITY;
-            for (Move m : board.getMoves()) {
-                // The board automatically flips "isFirstPlayer()" on each move, no need to flip the player here
-                double score = MiniMax(board.getNextMove(m), isFirstPlayer, iterRemain - 1);
-                maxScore = Math.max(maxScore, score);
-            }
-            return maxScore;
-        } else {
-            // Min
-            double minScore = Double.POSITIVE_INFINITY;
-            for (Move m : board.getMoves()) {
-                // The board automatically flips "isFirstPlayer()" on each move, no need to flip the player here
-                double score = MiniMax(board.getNextMove(m), isFirstPlayer, iterRemain - 1);
-                minScore = Math.min(minScore, score);
-            }
-            return minScore;
-        }
+    private static double diminish(double d) {
+        return (d > 10) ? d - 1 : (d < -10) ? d + 1 : d;
     }
 
     public double MiniMaxAlphaBeta(Board board, boolean isFirstPlayer, double alpha, double beta, int iterRemain) {
@@ -191,9 +169,9 @@ public class Client4 {
                 double score = MiniMaxAlphaBeta(board.getNextMove(m), isFirstPlayer, Math.max(alpha, alpha1), beta, iterRemain - 1);
                 alpha1 = Math.max(alpha1, score);
                 if (alpha1 >= beta)
-                    return alpha1;
+                    return diminish(alpha1);
             }
-            return alpha1;
+            return diminish(alpha1);
         } else {
             // Min
             double beta1 = Double.POSITIVE_INFINITY;
@@ -202,9 +180,9 @@ public class Client4 {
                 double score = MiniMaxAlphaBeta(board.getNextMove(m), isFirstPlayer, alpha, Math.min(beta, beta1), iterRemain - 1);
                 beta1 = Math.min(beta1, score);
                 if (beta1 <= alpha)
-                    return beta1;
+                    return diminish(beta1);
             }
-            return beta1;
+            return diminish(beta1);
         }
     }
 

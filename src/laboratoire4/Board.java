@@ -1,6 +1,8 @@
 package laboratoire4;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 
 public class Board {
@@ -107,6 +109,12 @@ public class Board {
                     }
                 }
             }
+
+            Collections.sort(cachedMoves, new Comparator<Move>() {
+                public int compare(Move a, Move b) {
+                    return (int) (1000.0 * (getNextMove(a).getHeuristic() - getNextMove(b).getHeuristic()));
+                }
+            });
         }
 
         return cachedMoves;
@@ -190,10 +198,6 @@ public class Board {
                 s += board[y][x].value() + " ";
             }
             s += "\n";
-        }
-        s += "\nPossible moves:";
-        for (Move m : getMoves()) {
-            s += "\n\t" + m;
         }
         return s;
     }
