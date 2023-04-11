@@ -6,12 +6,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.Hashtable;
 
 public class Client3 {
 
-  private int[][] board = new int[8][8];
+  private GameBoard gameBoard;
 
   public static void main(String[] args) throws IOException {
     // char cmd = (char) input.read();
@@ -50,16 +48,10 @@ public class Client3 {
       // System.out.println(cmd);
       switch (cmd) {
         case '1': // You have the first move
-          aBuffer = new byte[1024];
-          size = input.available();
-          // System.out.println("size " + size);
-          input.read(aBuffer, 0, size);
-          s = new String(aBuffer).trim();
-          /* System.out.println(s); */
-          buildBoard(s);
-          printBoard();
+          gameBoard = new GameBoard(getBoardConfiguration(input));
+          System.out.println(gameBoard);
           System.out.println(
-            "Nouvelle partie! Vous jouer blanc, entrez votre premier coup : "
+            "Nouvelle partie! Vous jouez rouge, entrez votre premier coup : "
           );
           String move = null;
           move = console.readLine();
@@ -67,14 +59,8 @@ public class Client3 {
           output.flush();
           break;
         case '2': // You have the second move
-          aBuffer = new byte[1024];
-          size = input.available();
-          // System.out.println("size " + size);
-          input.read(aBuffer, 0, size);
-          s = new String(aBuffer).trim();
-          /* System.out.println(s); */
-          buildBoard(s);
-          printBoard();
+          gameBoard = new GameBoard(getBoardConfiguration(input));
+          System.out.println(gameBoard);
           break;
         case '3': // New move
           aBuffer = new byte[16];
@@ -83,11 +69,12 @@ public class Client3 {
           input.read(aBuffer, 0, size);
           s = new String(aBuffer);
           System.out.println("Dernier coup :" + s);
-          updateBoard(s);
+          gameBoard.update(s);
+          System.out.println(gameBoard);
           System.out.println("Entrez votre coup : ");
           move = null;
           move = console.readLine();
-          updateBoard(move);
+          gameBoard.update(move);
           output.write(move.getBytes(), 0, move.length());
           output.flush();
           System.out.println("end of cmd3");
@@ -117,45 +104,12 @@ public class Client3 {
     }
   }
 
-  public void printBoard() {
-    for (int col = 0; col < board.length; col++) {
-      for (int line = 0; line < board[0].length; line++) {
-        System.out.print(this.board[line][col]);
-      }
-      System.out.println();
-    }
-  }
+  private String getBoardConfiguration(BufferedInputStream input)
+    throws IOException {
+    byte[] aBuffer = new byte[1024];
+    int size = input.available();
+    input.read(aBuffer, 0, size);
 
-  public void buildBoard(String s) {
-    //System.out.println(s);
-    String[] boardValues;
-    boardValues = s.split(" ");
-    int x = 0, y = 0;
-    for (int i = 0; i < boardValues.length; i++) {
-      board[x][y] = Integer.parseInt(boardValues[i]);
-      x++;
-      if (x == 8) {
-        x = 0;
-        y++;
-      }
-    }
-  }
-
-  public void updateBoard(String s) {
-    char[] lastMove = s.replaceAll("[-\\s+\u0000]", "").toCharArray();
-    //New token
-    this.board[getAlphabetPosition(lastMove[2]) - 1][this.board[0].length -
-      Character.getNumericValue(lastMove[3])] =
-      this.board[getAlphabetPosition(lastMove[0]) - 1][this.board[0].length -
-        Character.getNumericValue(lastMove[1])];
-    //Delete the old token
-    this.board[getAlphabetPosition(lastMove[0]) - 1][this.board[0].length -
-      Character.getNumericValue(lastMove[1])] =
-      0;
-    printBoard();
-  }
-
-  public int getAlphabetPosition(char letter) {
-    return Character.toUpperCase(letter) - 64;
+    return new String(aBuffer).trim();
   }
 }
