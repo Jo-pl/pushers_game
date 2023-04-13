@@ -47,10 +47,22 @@ public class GameBoard {
     return Character.toUpperCase(letter) - 64;
   }
 
+  public String getBestMove() {
+    this.minimaxAlphaBeta(
+        squares,
+        5,
+        Double.NEGATIVE_INFINITY,
+        Double.POSITIVE_INFINITY,
+        true
+      );
+
+    return "";
+  }
+
   /**
    * Fonction qui détermine le prochain coup de l’ordinateur. Cette fonction dispose de 5 secondes pour choisir son coup.
    */
-  public double minimaxAlphaBeta(
+  private double minimaxAlphaBeta(
     int[][] board,
     int depth,
     double alpha,
@@ -101,6 +113,7 @@ public class GameBoard {
   }
 
   public double evaluator(int[][] board) {
+    this.toString();
     return 0;
   }
 

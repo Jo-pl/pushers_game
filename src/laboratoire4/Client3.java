@@ -53,6 +53,7 @@ public class Client3 {
           System.out.println(
             "Nouvelle partie! Vous jouez rouge, entrez votre premier coup : "
           );
+          gameBoard.getBestMove();
           String move = null;
           move = console.readLine();
           output.write(move.getBytes(), 0, move.length());
@@ -72,6 +73,8 @@ public class Client3 {
           gameBoard.update(s);
           System.out.println(gameBoard);
           System.out.println("Entrez votre coup : ");
+
+          gameBoard.getBestMove();
           move = null;
           move = console.readLine();
           gameBoard.update(move);
